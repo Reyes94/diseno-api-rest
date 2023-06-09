@@ -1,7 +1,7 @@
 import { jewelModel } from "../models/jewel.model.js"
 import { handleErrors } from "../database/errors.js"
 
-const prepareHATEOAS = (jewels) => {
+const prepareHATEOAS = async(jewels, limit, page) => {
     const totalStock = jewels.reduce((accumulator, i) => accumulator + i.stock, 0)
     const results = jewels.map((i) => {
 
@@ -11,20 +11,40 @@ const prepareHATEOAS = (jewels) => {
         }
     })
     const total = jewels.length
+    const totalMeta = await jewelModel.getCount() 
+    const totalPages = Math.ceil( totalMeta / limit)
+   
+    const meta = {
+            total: totalMeta,
+            limit: parseInt(limit),
+            page: parseInt(page),
+            total_pages: totalPages,
+            next:
+                totalPages <= page
+                    ? null
+                    : `http://localhost:3000/api/joyas?limit=${limit}&page=${parseInt(page) + 1
+                    }`,
+            previous:
+                page <= 1
+                    ? null
+                    : `http://localhost:3000/api/joyas?limit=${limit}&page=${parseInt(page) - 1
+                    }`,
+    }
 
     const HATEOAS = {
         total,
         totalStock,
-        results
+        results,
+        meta
     }
     return HATEOAS
 }
 
 const getAllJewels = async (req, res) => {
-    const { sort, limit, page } = req.query;
+    const { sort, limit = 20, page = 1 } = req.query;
     try {
         const result = await jewelModel.findAll(sort, limit, page)
-        const HATEOAS = prepareHATEOAS(result)
+        const HATEOAS = await prepareHATEOAS(result, limit, page)
         return res.json(HATEOAS);
     } catch (error) {
         console.log(error)

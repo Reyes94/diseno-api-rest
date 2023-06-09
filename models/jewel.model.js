@@ -6,6 +6,7 @@ const findAll = async (sort, limit, page) => {
     const arrayValues = [];
 
     if (sort) {
+        console.log(sort)
         query += " ORDER BY %s %s";
         arrayValues.push(Object.keys(sort)[0], sort[Object.keys(sort)[0]]);
     }
@@ -29,6 +30,16 @@ const findAll = async (sort, limit, page) => {
         return result.rows;
     } catch (error) {
         console.log(error)
+        throw error
+    }
+}
+
+const getCount = async () => {
+    try {
+        const query = "SELECT COUNT(*) AS total FROM inventario"
+        const result = await pool.query(query)
+        return result.rows[0].total
+    } catch (error) {
         throw error
     }
 }
@@ -58,8 +69,8 @@ const filter = async ({ precio_max, precio_min, categoria, metal }) => {
 
     if (precio_max) addFilter('precio', '<=', precio_max)
     if (precio_min) addFilter('precio', '>=', precio_min)
-    if (categoria) addFilter('categoria', '=', categoria)
-    if (metal) addFilter('metal', '=', metal)
+    if (categoria) addFilter('categoria', '=', categoria.toLowerCase())
+    if (metal) addFilter('metal', '=', metal.toLowerCase())
 
     if (filters.length > 0) {
         filters = filters.join(" AND ")
@@ -82,4 +93,5 @@ export const jewelModel = {
     findAll,
     findById,
     filter,
+    getCount,
 }
